@@ -13,9 +13,18 @@ auth = HTTPBasicAuth()
 @auth.verify_password
 def verifySistem(login, password):
     return AuthSystem(login=login, password=password)
+"""
+id = Column(Integer, primary_key=True, unique=True)
+dia_semana     = Column(String(30))
+primeiro_ponto = Column(String(30))
+segundo_ponto  = Column(String(30))
+terceiro_ponto = Column(String(30))
+quarto_ponto   = Column(String(30))
+saldo_dia      = Column(NUMERIC(5,2))
+"""
 
 
-class DirectCursos(Resource):
+class DirectCalendario(Resource):
      
      def get(self, id):
 
@@ -93,7 +102,7 @@ class DirectCursos(Resource):
           return response
 
 
-class DirectCursosPass(Resource):
+class DirectCalendarioPass(Resource):
 
      def get(self):
           cursos = Cursos.query.all()
