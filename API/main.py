@@ -12,7 +12,7 @@ app = Flask(__name__)
 api = Api(app)
 
 
-api.add_resource(DirectCalendario, '/v1/pontos/<int:id>/' )
+api.add_resource(DirectCalendario, '/v1/pontos/<string:registro>/' )
 api.add_resource(DirectCalendarioPass, '/v1/pontos/' )
 
 api.add_resource(DirectAuth, '/v1/usuarios/<int:id>/' )

@@ -24,6 +24,7 @@ class Calendario(Base):
      terceiro_ponto = Column(String(30))
      quarto_ponto   = Column(String(30))
      saldo_dia      = Column(NUMERIC(5,2))
+     registro       = Column(String(30), unique=True)
 
      def __repr__(self):
          return f'<dia {self.dia_semana}>'
