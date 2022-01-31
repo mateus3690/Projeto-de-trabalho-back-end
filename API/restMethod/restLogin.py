@@ -132,7 +132,7 @@ class DirectLogin(Resource):
 
 class DirectLoginPass(Resource):
 
-     @auth.login_required
+     #@auth.login_required
      def get(self):
           logins = Login.query.all()
           response = [{
@@ -140,7 +140,8 @@ class DirectLoginPass(Resource):
                     'nome':       dados.nome,
                     'nascimento': dados.nascimento,
                     'cpf':        dados.cpf,
-                    'email':      dados.email,         
+                    'email':      dados.email,
+                    'senha':      dados.senha        
           } for dados in logins]
 
           if response == []:

@@ -1,14 +1,17 @@
+import imp
 import repackage
 repackage.up()
 
 from flask import Flask
 from flask_restful import Api
+from flask_cors import CORS
 from restMethod.restCalendario import DirectCalendario, DirectCalendarioPass
 from restMethod.restAuth import DirectAuth, DirectAuthPass
 from restMethod.restLogin import DirectLogin, DirectLoginPass
 
 
 app = Flask(__name__)
+CORS(app)
 api = Api(app)
 
 
