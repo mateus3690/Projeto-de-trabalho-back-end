@@ -1,92 +1,85 @@
-import repackage
-repackage.up()
-
-from config.tables import Login
+from config.dbase import ComponenteDB
 from utils.validadoresCampos import ValidaCampo
-from config.auth import AuthSystem
 from flask_restful import Resource
 from flask import request
-import sqlalchemy
-from flask_httpauth import HTTPBasicAuth
-from config.auth import crypMD5, AuthSystem
+#from flask_httpauth import HTTPBasicAuth
+from config.auth import crypMD5#, AuthSystem
 
-auth = HTTPBasicAuth()
-@auth.verify_password
-def verifySistem(login, password):
-    return AuthSystem(login=login, password=password)
-
-
+# auth = HTTPBasicAuth()
+# @auth.verify_password
+# def verifySistem(login, password):
+#     return AuthSystem(login=login, password=password)
 class DirectLogin(Resource):
-     
-     
+
      def get(self, email, senha):
 
-          try:
-               login = Login.query.filter_by(email=email,
-                                             senha= (crypMD5(senha) + 'TFHKKFJSTOJ8F')
-                                            ).first()
-               response = {
-                    'id':         login.id,
-                    'nome':       login.nome,
-                    'nascimento': login.nascimento,
-                    'cpf':        login.cpf,
-                    'email':      login.email
-               }
+          try: 
+               condicao = f"email='{email}' and senha='{crypMD5(senha + 'TFHKKFJSTOJ8F')}'"
+
+               usuario = ComponenteDB(nomeTabela='tb_usuario', condicoesDeConsulta=condicao)
+               usuario = usuario.consultarDados()
+
+               response = [{
+                    'id':         dados[0],
+                    'nome':       dados[1],
+                    'cpf':        str(dados[2]),
+                    'nascimento': str(dados[3]),
+                    'email':      str(dados[4])
+               } for dados in usuario]
+
+               if response == []:
+                    response = {
+                         "status": "Error",
+                         "mensagem":"Registro de usuário não encontrado!"
+                         }
+               print(len(response))
+               return response[0]
 
           except AttributeError:
                response = {
                     'status':'Error',
-                         'mensagem':"Usuário não existe nos registros"
-               }        
+                    'mensagem':f"Usuário, não existe nos registros"
+               }  
 
-          return response
+          return response  
      
      def put(self, email, senha):
-
           try:
-               login = Login.query.filter_by(email=email,
-                                             senha= (crypMD5(senha) + 'TFHKKFJSTOJ8F')
-                                            ).first()
+               condicao = f"email='{email}' and senha='{crypMD5(senha + 'TFHKKFJSTOJ8F')}'"
                dados = request.json
-               analiseCpf = ValidaCampo(cpf=dados['cpf'])
-               analiseEmail = ValidaCampo(email=dados['email'])
-               senha = len(senha) * '*'
+               payload = {}
+               
+               #login para atualizar dados
+               login = ComponenteDB(nomeTabela='tb_usuario', condicoesDeConsulta=condicao)
+               login = login.consultarDados()
 
-               if analiseCpf.analisaCPF() == True and analiseEmail.analisaEmail() == True:
-
-                    login.cpf = dados['cpf']
-                    login.email = dados['email']
+               if login != []:
 
                     if 'nome' in dados:
-                         login.nome = dados['nome']
-
-                    if 'nascimento' in dados:
-                         login.nascimento = dados['nascimento']                       
+                         payload['nome'] = f"'{dados['nome']}'"
                     
-                    if 'senha' in dados:                       
-                         login.senha = crypMD5(dados['senha']) + 'TFHKKFJSTOJ8F'
-                         senha = dados['senha']
-                    login.save()
+                    if 'nascimento' in dados:
+                         payload['nascimento'] = f"'{dados['nascimento']}'"
+                    
+                    if 'senha' in dados:
+                         payload['senha'] = f"'{crypMD5(dados['senha'] + 'TFHKKFJSTOJ8F')}'"
+                    
+                    pontoDeTrabalho = ComponenteDB(nomeTabela='tb_usuario',
+                                                  valorColunaAtualizar = payload, 
+                                                  condicoesDeConsulta=condicao,
+                                                  salvar=True)
+
+                    pontoDeTrabalho.atualizarDados()
 
                     response = {
-                         'id':         login.id,
-                         "nome":       login.nome,
-                         "nascimento": login.nascimento,
-                         "cpf":        login.cpf,
-                         "email":      login.email,
-                         "senha":      senha
+                         'status':'OK',
+                         'mensagem':"Dados foram atualizados com sucesso!"
                     }
-
-               elif analiseCpf.analisaCPF() == False:
+               
+               else:
                     response = {
-                         'status':'Error',
-                         'mensagem':'CPF inválido!'
-                    }
-
-               elif analiseEmail.analisaEmail() == True:
-                    response = {
-                         'status':'Error',
-                         'mensagem':'E-mail inválido!'
+                              'status':'Error',
+                              'mensagem':"Verifique sua credências de login, e tente novamente!"
                     }
 
           except TypeError:
@@ -94,88 +87,85 @@ class DirectLogin(Resource):
                     'status':'Error',
                     'mensagem':"Null"
                }
-          
-          except AttributeError:
-               response = {
-                    'status':'Error',
-                    'mensagem':"Login indefinido!"
-               }
-          
-          except sqlalchemy.exc.IntegrityError:
-               response = {
-                    'status':'Error',
-                    'mensagem':'Usuário já esta registado no sistema!'
-               }
-          
+
           return response
 
      def delete(self, email, senha):
-          
           try:
-               login = Login.query.filter_by(email=email,
-                                             senha= (crypMD5(senha) + 'TFHKKFJSTOJ8F')
-                                            ).first()
-               nome = login.nome
-               login.delete()
+               pontoDeTrabalho = ComponenteDB(nomeTabela='tb_usuario', 
+                                              condicoesDeConsulta=f"email = '{email}' and senha = '{crypMD5(senha + 'TFHKKFJSTOJ8F')}'",
+                                              salvar=True)
+               pontoDeTrabalho.apagaDados()
+
                response = {
                     'status':'Ok',
-                    'mensagem':f'O usuario {nome} foi deletado dos registros'
+                    'mensagem':f'O Usuário foi deletado dos registros'
                }
           except AttributeError:
                response = {
                     'status':'Error',
-                    'mensagem':'Por favor informe um usuário existente nos registros'
+                    'mensagem':'Informe um registro de usuário existente'
                }
           
           return response
 
 
 class DirectLoginPass(Resource):
-
-     #@auth.login_required
+     
+     # @auth.login_required
      def get(self):
-          logins = Login.query.all()
+
+          usuario = ComponenteDB(nomeTabela='tb_usuario')
+          usuario = usuario.consultarDados()
+
           response = [{
-                    'id':         dados.id,
-                    'nome':       dados.nome,
-                    'nascimento': dados.nascimento,
-                    'cpf':        dados.cpf,
-                    'email':      dados.email,
-                    'senha':      dados.senha        
-          } for dados in logins]
+                    'id':         dados[0],
+                    'nome':       dados[1],
+                    'nascimento': str(dados[2]),
+                    'cpf':        str(dados[3]),
+                    'email':      str(dados[4])
+               } for dados in usuario]
 
           if response == []:
-                response = {"mensagem":"Nenhum registro no momento"}
+                response = {
+                     "status": "Error",
+                     "mensagem":"Nenhum registro de usuário no momento!"
+               }
           
           return response
-     
+
+
      def post(self):
           
           try:
-
+               
                dados = request.json
                analiseCpf = ValidaCampo(cpf=dados['cpf'])
                analiseEmail = ValidaCampo(email=dados['email'])
 
                if analiseCpf.analisaCPF() == True and analiseEmail.analisaEmail() == True:
-                    login = Login(nome          = dados['nome'],
-                                  nascimento    = dados['nascimento'],
-                                  cpf           = dados['cpf'],
-                                  email         = dados['email'],
-                                  senha         = (crypMD5(dados['senha']) + 'TFHKKFJSTOJ8F')
-                              )
-
-                    login.save()
-
-                    response = {
-                         'id':         login.id,
-                         "nome":       login.nome,
-                         "nascimento": login.nascimento,
-                         "cpf":        login.cpf,
-                         "email":      login.email,
-                         "senha":      dados['senha']
+                    usuario = ComponenteDB(nomeTabela='tb_usuario', 
+                                                   inserirColunas={
+                                                                      "nome":       f"'{dados['nome']}'",
+                                                                      "nascimento": f"'{dados['nascimento']}'",
+                                                                      "cpf":        f"'{dados['cpf']}'",
+                                                                      "email":      f"'{dados['email']}'",
+                                                                      "senha":      f"'{crypMD5(dados['senha'] + 'TFHKKFJSTOJ8F')}'"
+                                                  }, salvar=True)
+                    if usuario.inserirDados() == False:
+                         response = {
+                              'status':'Error',
+                              'mensagem':f"Usuário já está registado no sistema!"
                     }
-               
+                    else:
+                         usuario.inserirDados()
+                         response = {
+                                   "nome":       f"{dados['nome']}",
+                                   "nascimento": f"{dados['nascimento']}",
+                                   "cpf":        f"{dados['cpf']}",
+                                   "email":      f"{dados['email']}"
+                         }
+
                elif analiseCpf.analisaCPF() == False:
                     response = {
                          'status':'Error',
@@ -187,7 +177,6 @@ class DirectLoginPass(Resource):
                          'status':'Error',
                          'mensagem':'Email inválido!'
                     }
-
           except KeyError:
                response = {
                     'status':'Error',
@@ -199,11 +188,5 @@ class DirectLoginPass(Resource):
                     'status':'Error',
                     'mensagem':'Null'
                }
-          
-          except sqlalchemy.exc.IntegrityError:
-               response = {
-                    'status':'Error',
-                    'mensagem':'Usuario já esta registado no sistema!'
-               }
-
           return response
+               

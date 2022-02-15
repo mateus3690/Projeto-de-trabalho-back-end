@@ -25,9 +25,31 @@ class Calendario(Base):
      quarto_ponto   = Column(String(30))
      saldo_dia      = Column(NUMERIC(5,2))
      registro       = Column(String(30), unique=True)
+     chave          = Column(String(11))
 
      def __repr__(self):
-         return f'<dia {self.dia_semana}>'
+         return f'<dia {self.chave}>'
+     
+     def save(self):
+          db_session.add(self)
+          db_session.commit()
+     
+     def delete(self):
+          db_session.delete(self)
+          db_session.commit()
+
+class FechamentoDoMes(Base):
+    
+     __tablename__ = 'tb_fechamento'
+     id          = Column(Integer, primary_key=True, unique=True)
+     mes         = Column(String(30))
+     saldo_extra = Column(NUMERIC(5,2))
+     valor_extra = Column(NUMERIC(5,2))
+     saldo_dia   = Column(NUMERIC(5,2))
+     chave       = Column(String(40))
+
+     def __repr__(self):
+         return f'<dia {self.chave}>'
      
      def save(self):
           db_session.add(self)

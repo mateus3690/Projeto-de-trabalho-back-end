@@ -1,38 +1,49 @@
-from re import A
 import repackage
 repackage.up()
 
-from config.tables import Calendario
-from utils.buscarDiaSemana import CalendariaSemanal
+from config.dbase import ComponenteDB
 from utils.calcularHoras import CalculoDoDia as calDia
-from config.auth import AuthSystem
+from utils.buscarDiaSemana import CalendariaSemanal
+#from config.auth import AuthSystem
 from flask_restful import Resource
 from flask import request
-import sqlalchemy
-from flask_httpauth import HTTPBasicAuth
 
-auth = HTTPBasicAuth()
-@auth.verify_password
-def verifySistem(login, password):
-    return AuthSystem(login=login, password=password)
+
+# auth = HTTPBasicAuth()
+# @auth.verify_password
+# def verifySistem(login, password):
+#     return AuthSystem(login=login, password=password)
 
 
 class DirectCalendario(Resource):
      
-     def get(self, registro):
+     def get(self, chave, registro):
 
-          try:
-               pontoDeTrabalho = Calendario.query.filter_by(registro=f'Registro-{registro}').first()
-               response = {
-                    'id':             pontoDeTrabalho.id,
-                    'dia_semana':     pontoDeTrabalho.dia_semana,
-                    'primeiro_ponto': pontoDeTrabalho.primeiro_ponto,
-                    'segundo_ponto':  pontoDeTrabalho.segundo_ponto,
-                    'terceiro_ponto': pontoDeTrabalho.terceiro_ponto,
-                    'quarto_ponto':   pontoDeTrabalho.quarto_ponto,
-                    'saldo_dia':      f'{str(pontoDeTrabalho.saldo_dia)}',
-                    'registro':       pontoDeTrabalho.registro
-               }
+          try: 
+               condicao = f"chave='{chave}' and registro='{registro}'"
+               if registro == 'pass':
+                    condicao = f"chave='{chave}' order by 1 desc"
+
+               pontoDeTrabalho = ComponenteDB(nomeTabela='tb_calendario', condicoesDeConsulta=condicao)
+               pontoDeTrabalho = pontoDeTrabalho.consultarDados()
+
+               response = [{
+                    'id':             dados[0],
+                    'id_usuario':     dados[1],
+                    'dia_semana':     dados[2],
+                    'primeiro_ponto': str(dados[3]),
+                    'segundo_ponto':  str(dados[4]),
+                    'terceiro_ponto': str(dados[5]),
+                    'quarto_ponto':   str(dados[6]),
+                    'saldo_dia':      str(dados[7]),
+                    'registro':       dados[8],
+                    'chave'   :       dados[9]
+                    } for dados in pontoDeTrabalho]
+
+               if response == []:
+                    response = {"mensagem":"Nenhum registro de ponto no momento"}
+          
+               return response
 
           except AttributeError:
                response = {
@@ -40,78 +51,52 @@ class DirectCalendario(Resource):
                          'mensagem':f"Ponto de trabalho, não existe nos registros"
                }  
 
-          return response      
-     
-     #@auth.login_required
-     def put(self, registro):
+          return response  
+
+     def put(self, chave, registro):
 
           try:
-               #buscarID = Calendario.query.filter_by(registro=f'Registro-{registro}').first()
-               pontoDeTrabalho = Calendario.query.filter_by(registro=f'Registro-{registro}').first()
+               condicao = f"chave='{chave}' and registro='{registro}'"
                dados = request.json
-               
+               payload = {}
                #case para atualizar somente a hora do ponto, sua data não pode mudar, só deletando
                if 'primeiro_ponto' in dados:
-                    novoPonto= {
-                         "data":str(pontoDeTrabalho.primeiro_ponto).split(' '),
-                         "hora":str(dados['primeiro_ponto']).split(' ')
-                    }
-                    data = novoPonto['data'][0]
-                    hora = novoPonto['hora'][1]
-
-                    pontoDeTrabalho.primeiro_ponto = f'{data} {hora}'
+                  payload['primeiro_ponto'] = f"'{dados['primeiro_ponto']}'"
                
                if 'segundo_ponto' in dados:
-                    novoPonto= {
-                         "data":str(pontoDeTrabalho.segundo_ponto).split(' '),
-                         "hora":str(dados['segundo_ponto']).split(' ')
-                    }
-                    data = novoPonto['data'][0]
-                    hora = novoPonto['hora'][1]
-
-                    pontoDeTrabalho.segundo_ponto = f'{data} {hora}'
+                    payload['segundo_ponto'] = f"'{dados['segundo_ponto']}'"
                
                if 'terceiro_ponto' in dados:
-                    novoPonto= {
-                         "data":str(pontoDeTrabalho.terceiro_ponto).split(' '),
-                         "hora":str(dados['terceiro_ponto']).split(' ')
-                    }
-                    data = novoPonto['data'][0]
-                    hora = novoPonto['hora'][1]
-
-                    pontoDeTrabalho.terceiro_ponto = f'{data} {hora}'
-               
+                    payload['terceiro_ponto'] = f"'{dados['terceiro_ponto']}'"
+                    
                if 'quarto_ponto' in dados:
-                    novoPonto= {
-                         "data":str(pontoDeTrabalho.quarto_ponto).split(' '),
-                         "hora":str(dados['quarto_ponto']).split(' ')
-                    }
-                    data = novoPonto['data'][0]
-                    hora = novoPonto['hora'][1]
-
-                    pontoDeTrabalho.quarto_ponto = f'{data} {hora}'
+                    payload['quarto_ponto'] = f"'{dados['quarto_ponto']}'"
 
                #atualizar o novo saldo do dia
-               diaSeman = pontoDeTrabalho.dia_semana
+               diaSeman = ComponenteDB(nomeTabela='tb_calendario',
+                                       valorConsulta="dia_semana",
+                                       condicoesDeConsulta=condicao)
+               diaSeman = diaSeman.consultarDados()[0]
+  
                retornoSaldo = calDia(
-                    pontoDeTrabalho.primeiro_ponto,
-                    pontoDeTrabalho.segundo_ponto,
-                    pontoDeTrabalho.terceiro_ponto,
-                    pontoDeTrabalho.quarto_ponto,
-                    (True if diaSeman == 'Sexta-Feira' else False)
-               )  
-               pontoDeTrabalho.saldo_dia = retornoSaldo.saldoDia()
-               pontoDeTrabalho.save()#//
+                    dados['primeiro_ponto'],
+                    dados['segundo_ponto'],
+                    dados['terceiro_ponto'],
+                    dados['quarto_ponto'],
+                    (True if diaSeman[0] == 'Sexta-Feira' else False)
+               )
+               
+               payload['saldo_dia'] = retornoSaldo.saldoDia()
+               print(payload)
+               pontoDeTrabalho = ComponenteDB(nomeTabela='tb_calendario',
+                                              valorColunaAtualizar = payload, 
+                                              condicoesDeConsulta=condicao,
+                                              salvar=True)
+               pontoDeTrabalho.atualizarDados()
 
                response = {
-                    'id':             pontoDeTrabalho.id,
-                    'dia_semana':     pontoDeTrabalho.dia_semana,
-                    'primeiro_ponto': pontoDeTrabalho.primeiro_ponto,
-                    'segundo_ponto':  pontoDeTrabalho.segundo_ponto,
-                    'terceiro_ponto': pontoDeTrabalho.terceiro_ponto,
-                    'quarto_ponto':   pontoDeTrabalho.quarto_ponto,
-                    'saldo_dia':      f'{str(pontoDeTrabalho.saldo_dia)}',
-                    'registro':       pontoDeTrabalho.registro         
+                    'status':'OK',
+                    'mensagem':"Dados foram atualizados com sucesso!"
                }
 
           except TypeError:
@@ -119,20 +104,20 @@ class DirectCalendario(Resource):
                     'status':'Error',
                     'mensagem':"Null"
                }
-          
 
           return response
-
-     #@auth.login_required
-     def delete(self, registro):
+     
+     def delete(self, chave, registro):
           
           try:
-               pontoDeTrabalho = Calendario.query.filter_by(registro=f'Registro-{registro}').first()
-               registroPonto = pontoDeTrabalho.registro
-               pontoDeTrabalho.delete()
+               pontoDeTrabalho = ComponenteDB(nomeTabela='tb_calendario', 
+                                              condicoesDeConsulta=f"chave = '{chave}' and registro = '{registro}'",
+                                              salvar=True)
+               pontoDeTrabalho.apagaDados()
+
                response = {
                     'status':'Ok',
-                    'mensagem':f'O {registroPonto} foi deletado dos registros de ponto'
+                    'mensagem':f'O Ponto foi deletado dos registros'
                }
           except AttributeError:
                response = {
@@ -145,17 +130,22 @@ class DirectCalendario(Resource):
 
 class DirectCalendarioPass(Resource):
 
+     # @auth.login_required
      def get(self):
-          pontoDeTrabalho = Calendario.query.all()
+          pontoDeTrabalho = ComponenteDB(nomeTabela='tb_calendario')
+          pontoDeTrabalho = pontoDeTrabalho.consultarDados()
+
           response = [{
-               'id':             dados.id,
-               'dia_semana':     dados.dia_semana,
-               'primeiro_ponto': dados.primeiro_ponto,
-               'segundo_ponto':  dados.segundo_ponto,
-               'terceiro_ponto': dados.terceiro_ponto,
-               'quarto_ponto':   dados.quarto_ponto,
-               'saldo_dia':      f'{str(dados.saldo_dia)}',
-               'registro':       dados.registro
+               'id':             dados[0],
+               'id_usuario':     dados[1],
+               'dia_semana':     dados[2],
+               'primeiro_ponto': str(dados[3]),
+               'segundo_ponto':  str(dados[4]),
+               'terceiro_ponto': str(dados[5]),
+               'quarto_ponto':   str(dados[6]),
+               'saldo_dia':      str(dados[7]),
+               'registro':       dados[8],
+               'chave'   :       dados[9]
                } for dados in pontoDeTrabalho]
 
           if response == []:
@@ -173,37 +163,52 @@ class DirectCalendarioPass(Resource):
 
                registroUnico = str(dados['primeiro_ponto']).split(' ')
                registroUnico = str(registroUnico[0]).replace('-','')
+               uniqueChave = int(dados['chave']) + int(registroUnico)
 
                retornoSaldo = calDia(
                     dados['primeiro_ponto'],
                     dados['segundo_ponto'],
                     dados['terceiro_ponto'],
                     dados['quarto_ponto'],
-                    (True if diaSeman.retornaDia() == 'Sexta-Feira' else False)
+                    (True if diaSeman.retornaDia() == 'Sexta-Feira' else False)           
                )     
                
-               pontoDeTrabalho = Calendario(dia_semana     = diaSeman.retornaDia(),
-                                            primeiro_ponto = dados['primeiro_ponto'],
-                                            segundo_ponto  = dados['segundo_ponto'],
-                                            terceiro_ponto = dados['terceiro_ponto'],
-                                            quarto_ponto   = dados['quarto_ponto'],
-                                            saldo_dia      = retornoSaldo.saldoDia(),
-                                            registro       = f'Registro-{registroUnico}'
-               )
+               id_usuario = ComponenteDB(nomeTabela='tb_usuario', 
+                                         valorConsulta="id",
+                                         condicoesDeConsulta=f"cpf='{dados['chave']}'")
+               id_usuario = id_usuario.consultarDados()[0]
 
-               pontoDeTrabalho.save()
+               pontoDeTrabalho = ComponenteDB(nomeTabela='tb_calendario',
+                                              inserirColunas={
+                                                            'id_usuario':     id_usuario[0],
+                                                            'dia_semana':     f"'{diaSeman.retornaDia()}'",
+                                                            'primeiro_ponto': f"'{dados['primeiro_ponto']}'",
+                                                            'segundo_ponto':  f"'{dados['segundo_ponto']}'",
+                                                            'terceiro_ponto': f"'{dados['terceiro_ponto']}'",
+                                                            'quarto_ponto':   f"'{dados['quarto_ponto']}'",
+                                                            'saldo_dia':      retornoSaldo.saldoDia(),
+                                                            'registro':       f"'{uniqueChave}'",
+                                                            'chave'   :       f"'{dados['chave']}'"}, salvar=True)
 
-               response = {
-                   'id':              pontoDeTrabalho.id,
-                    'dia_semana':     pontoDeTrabalho.dia_semana,
-                    'primeiro_ponto': pontoDeTrabalho.primeiro_ponto,
-                    'segundo_ponto':  pontoDeTrabalho.segundo_ponto,
-                    'terceiro_ponto': pontoDeTrabalho.terceiro_ponto,
-                    'quarto_ponto':   pontoDeTrabalho.quarto_ponto,
-                    'saldo_dia':      f'{str(pontoDeTrabalho.saldo_dia)}',
-                    'registro':       pontoDeTrabalho.registro
-               }
-
+               if pontoDeTrabalho.inserirDados() == False:
+                     response = {
+                         'status':'Error',
+                         'mensagem':f"Ponto de registro '{uniqueChave}', já está registado no sistema!"
+                    }
+               else:
+                    pontoDeTrabalho.inserirDados()
+                    response = {
+                                   'dia_semana':     f"{diaSeman.retornaDia()}",
+                                   'primeiro_ponto': f"{dados['primeiro_ponto']}",
+                                   'segundo_ponto':  f"{dados['segundo_ponto']}",
+                                   'terceiro_ponto': f"{dados['terceiro_ponto']}",
+                                   'quarto_ponto':   f"{dados['quarto_ponto']}",
+                                   'saldo_dia':      retornoSaldo.saldoDia(),
+                                   'registro':       f"{uniqueChave}",
+                                   'chave'   :       f"{dados['chave']}"
+                              }
+     
+ 
           except KeyError:
                response = {
                     'status':'Error',
@@ -221,11 +226,6 @@ class DirectCalendarioPass(Resource):
                     'status':'Error',
                     'mensagem':'Erro no formato da data'
                }
-          
-          except sqlalchemy.exc.IntegrityError:
-               response = {
-                    'status':'Error',
-                    'mensagem':'Ponto já está registado no sistema!'
-               }
 
           return response
+          
