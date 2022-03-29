@@ -1,9 +1,9 @@
-from config.dbase import ComponenteDB
+from database.dbase import ComponenteDB
 from utils.validadoresCampos import ValidaCampo
 from flask_restful import Resource
 from flask import request
 #from flask_httpauth import HTTPBasicAuth
-from config.auth import crypMD5#, AuthSystem
+from config.configAuth import crypMD5#, AuthSystem
 
 # auth = HTTPBasicAuth()
 # @auth.verify_password
@@ -24,15 +24,15 @@ class DirectLogin(Resource):
                     'nome':       dados[1],
                     'cpf':        str(dados[2]),
                     'nascimento': str(dados[3]),
-                    'email':      str(dados[4])
+                    'email':      str(dados[4]),
+                    'salario':    str(dados[6])  
                } for dados in usuario]
 
                if response == []:
                     response = {
                          "status": "Error",
                          "mensagem":"Registro de usuário não encontrado!"
-                         }
-               print(len(response))
+                         } 
                return response[0]
 
           except AttributeError:
@@ -63,6 +63,9 @@ class DirectLogin(Resource):
                     
                     if 'senha' in dados:
                          payload['senha'] = f"'{crypMD5(dados['senha'] + 'TFHKKFJSTOJ8F')}'"
+
+                    if 'salario' in dados:
+                         payload['salario'] = f"{dados['salario']}"     
                     
                     pontoDeTrabalho = ComponenteDB(nomeTabela='tb_usuario',
                                                   valorColunaAtualizar = payload, 
@@ -123,7 +126,8 @@ class DirectLoginPass(Resource):
                     'nome':       dados[1],
                     'nascimento': str(dados[2]),
                     'cpf':        str(dados[3]),
-                    'email':      str(dados[4])
+                    'email':      str(dados[4]),
+                    'salario':    str(dados[6])  
                } for dados in usuario]
 
           if response == []:
@@ -150,7 +154,8 @@ class DirectLoginPass(Resource):
                                                                       "nascimento": f"'{dados['nascimento']}'",
                                                                       "cpf":        f"'{dados['cpf']}'",
                                                                       "email":      f"'{dados['email']}'",
-                                                                      "senha":      f"'{crypMD5(dados['senha'] + 'TFHKKFJSTOJ8F')}'"
+                                                                      "senha":      f"'{crypMD5(dados['senha'] + 'TFHKKFJSTOJ8F')}'",
+                                                                      "salario":    f"{dados['salario']}"
                                                   }, salvar=True)
                     if usuario.inserirDados() == False:
                          response = {
@@ -163,7 +168,8 @@ class DirectLoginPass(Resource):
                                    "nome":       f"{dados['nome']}",
                                    "nascimento": f"{dados['nascimento']}",
                                    "cpf":        f"{dados['cpf']}",
-                                   "email":      f"{dados['email']}"
+                                   "email":      f"{dados['email']}",
+                                   "salario":    f"{dados['salario']}"
                          }
 
                elif analiseCpf.analisaCPF() == False:

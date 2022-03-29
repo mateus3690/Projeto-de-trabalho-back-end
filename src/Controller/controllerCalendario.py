@@ -1,7 +1,7 @@
 import repackage
 repackage.up()
 
-from config.dbase import ComponenteDB
+from database.dbase import ComponenteDB
 from utils.calcularHoras import CalculoDoDia as calDia
 from utils.buscarDiaSemana import CalendariaSemanal
 #from config.auth import AuthSystem
@@ -61,8 +61,9 @@ class DirectCalendario(Resource):
                payload = {}
                #case para atualizar somente a hora do ponto, sua data não pode mudar, só deletando
                if 'primeiro_ponto' in dados:
-                  payload['primeiro_ponto'] = f"'{dados['primeiro_ponto']}'"
-               
+                    payload['primeiro_ponto'] = f"'{dados['primeiro_ponto']}'"
+                    payload['mes_ano'] = str(dados['primeiro_ponto'][0:7]).replace('-', '')
+                    
                if 'segundo_ponto' in dados:
                     payload['segundo_ponto'] = f"'{dados['segundo_ponto']}'"
                
@@ -70,7 +71,7 @@ class DirectCalendario(Resource):
                     payload['terceiro_ponto'] = f"'{dados['terceiro_ponto']}'"
                     
                if 'quarto_ponto' in dados:
-                    payload['quarto_ponto'] = f"'{dados['quarto_ponto']}'"
+                    payload['quarto_ponto'] = f"'{dados['quarto_ponto']}'"     
 
                #atualizar o novo saldo do dia
                diaSeman = ComponenteDB(nomeTabela='tb_calendario',
@@ -87,7 +88,7 @@ class DirectCalendario(Resource):
                )
                
                payload['saldo_dia'] = retornoSaldo.saldoDia()
-               print(payload)
+               
                pontoDeTrabalho = ComponenteDB(nomeTabela='tb_calendario',
                                               valorColunaAtualizar = payload, 
                                               condicoesDeConsulta=condicao,
@@ -173,6 +174,8 @@ class DirectCalendarioPass(Resource):
                     (True if diaSeman.retornaDia() == 'Sexta-Feira' else False)           
                )     
                
+               mes_ano = str(dados['primeiro_ponto'][0:7]).replace('-', '')
+
                id_usuario = ComponenteDB(nomeTabela='tb_usuario', 
                                          valorConsulta="id",
                                          condicoesDeConsulta=f"cpf='{dados['chave']}'")
@@ -188,8 +191,9 @@ class DirectCalendarioPass(Resource):
                                                             'quarto_ponto':   f"'{dados['quarto_ponto']}'",
                                                             'saldo_dia':      retornoSaldo.saldoDia(),
                                                             'registro':       f"'{uniqueChave}'",
-                                                            'chave'   :       f"'{dados['chave']}'"}, salvar=True)
-
+                                                            'chave'   :       f"'{dados['chave']}'",
+                                                            'mes_ano':        f"'{mes_ano}'"}, salvar=True)
+                                                             
                if pontoDeTrabalho.inserirDados() == False:
                      response = {
                          'status':'Error',

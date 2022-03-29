@@ -1,5 +1,4 @@
 from datetime import datetime
-from time import strftime
 
 
 class CalculoDoDia():
@@ -76,3 +75,36 @@ class CalculoDoDia():
 
           retornarValorTotal = extracaoDeMinutos["extracao1"] + extracaoDeMinutos["extracao2"]
           return retornarValorTotal
+
+class ManipulacaoDeTempo():
+     def __init__(self, tempo):
+         self.tempo = int(tempo)
+
+     def minutoHora(self):
+     
+          hora = f'{self.tempo // 60}'
+          minu = f'{self.tempo % 60}'
+
+          formatHora =  '0'+hora if len(hora) == 1 else hora
+          formatMin = '0'+minu if len(minu) == 1 else minu
+
+          listaMin = [f'{formatHora}:{formatMin}:00h', f'{hora}.{minu}' ]
+          return listaMin
+
+class ManipulacaoSalario():
+     def __init__(self, salario = 0, extra = 0, horaDia = 0 ):
+          self.salario = salario
+          self.extra = extra
+          self.horaDia = horaDia
+
+     def valorExtra(self):
+
+          calHora = self.salario / 220 #self.horaDia = horaDia padrão 220
+          calPersentual = (calHora / 100) * 50
+
+          somaInicial = calHora + calPersentual
+          somaFinal = somaInicial * self.extra
+
+          return somaFinal
+
+

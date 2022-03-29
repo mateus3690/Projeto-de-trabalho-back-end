@@ -58,7 +58,6 @@ class ComponenteDB():
             cur.execute(sql)
         
         except Exception as err:
-            print('Error ao inserir dados!')
             return False
 
         if self.salvar:
@@ -74,7 +73,7 @@ class ComponenteDB():
             sql = f'SELECT * FROM {self.nomeTabela} WHERE {self.condicoesDeConsulta}'
         else:
            sql = f'SELECT * FROM {self.nomeTabela}' 
-        print(sql)
+        #print(sql)
         conn, cur = conexao()
         try:
 
@@ -105,7 +104,7 @@ class ComponenteDB():
             return False  
 
         sql = f"UPDATE {self.nomeTabela} SET {set} WHERE {self.condicoesDeConsulta}"
-        print(sql)
+        #print(sql)
         try:
             cur.execute(sql)
         
