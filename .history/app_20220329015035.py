@@ -17,7 +17,7 @@ api = Api(app)
 
 api.add_resource(DirectCalendario, '/v1/pontos/<string:chave>/<string:registro>/' )
 api.add_resource(DirectCalendarioPass, '/v1/pontos/' )
-api.add_resource(DirectCalendarioPass, '/' )
+api.add_resource(DirectCalendarioPass, '/v1/pontos/' )
 api.add_resource(DirectLogin, '/v1/login/<string:email>/<string:senha>/')
 api.add_resource(DirectLoginPass, '/v1/login/')
 
