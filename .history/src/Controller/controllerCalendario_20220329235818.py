@@ -219,20 +219,20 @@ class DirectCalendarioPass(Resource):
                #      'mensagem':'Falta informação no registro'
                # }
                pontoDeTrabalho = ComponenteDB(nomeTabela='tb_calendario')
-               pontoDeTrabalho = pontoDeTrabalho.consultarDados()
+          pontoDeTrabalho = pontoDeTrabalho.consultarDados()
 
-               response = [{
-                    'id':             dados[0],
-                    'id_usuario':     dados[1],
-                    'dia_semana':     dados[2],
-                    'primeiro_ponto': str(dados[3]),
-                    'segundo_ponto':  str(dados[4]),
-                    'terceiro_ponto': str(dados[5]),
-                    'quarto_ponto':   str(dados[6]),
-                    'saldo_dia':      str(dados[7]),
-                    'registro':       dados[8],
-                    'chave'   :       dados[9]
-                    } for dados in pontoDeTrabalho]
+          response = [{
+               'id':             dados[0],
+               'id_usuario':     dados[1],
+               'dia_semana':     dados[2],
+               'primeiro_ponto': str(dados[3]),
+               'segundo_ponto':  str(dados[4]),
+               'terceiro_ponto': str(dados[5]),
+               'quarto_ponto':   str(dados[6]),
+               'saldo_dia':      str(dados[7]),
+               'registro':       dados[8],
+               'chave'   :       dados[9]
+               } for dados in pontoDeTrabalho]
           
           except TypeError:
                response = {
