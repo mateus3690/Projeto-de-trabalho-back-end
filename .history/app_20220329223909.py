@@ -27,6 +27,6 @@ api.add_resource(DirectFechamento, '/v1/fechamento/<string:chave>/<string:mes>/'
 
 
 if __name__ == '__main__':
-    app.run(port=4000, debug=True)
+    app.run(port=4000, debug=Tr)
 
      
