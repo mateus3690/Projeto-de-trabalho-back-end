@@ -24,7 +24,7 @@ api.add_resource(DirectLoginPass, '/v1/login/')
 api.add_resource(DirectFechamento, '/v1/fechamento/<string:chave>/<string:mes>/')
 # api.add_resource(DirectAuth, '/v1/usuarios/<int:id>/' )
 # api.add_resource(DirectAuthPass, '/v1/usuarios/' )
-
+#
 
 if __name__ == '__main__':
     app.run(debug=True)
