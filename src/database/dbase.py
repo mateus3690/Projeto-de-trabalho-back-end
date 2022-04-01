@@ -58,6 +58,7 @@ class ComponenteDB():
             cur.execute(sql)
         
         except Exception as err:
+            print(err)
             return False
 
         if self.salvar:
